@@ -1,0 +1,27 @@
+{
+  "_comment": "Copy to intraday/config.json and edit. Missing keys use the defaults in nse_core/state.py. Only you change \"paper\".",
+  "paper": true,
+  "capital": 50000,
+  "risk_per_trade": 500,
+  "max_daily_loss": 1500,
+  "max_weekly_loss": 5000,
+  "max_trades_per_day": 30,
+  "max_open_positions": 3,
+  "max_per_stock": 10000,
+  "mis_leverage": 5,
+  "allow_short": true,
+  "entries_from": "09:20",
+  "entries_until": "14:30",
+  "hard_exit": "15:10",
+  "rvol_min": 3.0,
+  "top_n": 10,
+  "stop_atr_fraction": 0.10,
+  "stop_min_pct": 0.004,
+  "entry_cap_pct": 0.0005,
+  "min_price": 50,
+  "event_windows": [
+    {"from": "2026-12-04 09:55", "to": "2026-12-04 10:20", "why": "RBI policy (example: check the real date)"}
+  ],
+  "blocked": [],
+  "extra_holidays": {}
+}

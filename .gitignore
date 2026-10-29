@@ -1,0 +1,9 @@
+# your trading workspace: config, candles, ledger, tax files
+intraday/
+# secrets never belong here
+.env
+*.token
+kite.json
+__pycache__/
+*.pyc
+.DS_Store
