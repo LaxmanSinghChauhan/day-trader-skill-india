@@ -58,7 +58,9 @@ def save(path: Path, symbol: str, interval: str, source: str, rows, tick_size=No
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"symbol": symbol, "interval": interval, "source": source, "tick_size": tick_size,
                "candles": [[r[0] if isinstance(r[0], str) else r[0].isoformat(), *r[1:6]] for r in rows]}
-    path.write_text(json.dumps(payload, separators=(",", ":")))
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(payload, separators=(",", ":")))
+    tmp.replace(path)                          # atomic: a stopped download never leaves half a file
 
 
 def sessions(bars: list[Bar]) -> dict[date, list[Bar]]:
