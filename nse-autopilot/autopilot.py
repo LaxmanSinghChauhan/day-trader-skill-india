@@ -153,16 +153,17 @@ def completed(bars, now):
 
 # ---------- the day ----------
 class Day:
-    def __init__(self, cfg: dict, day, feed: Feed, log):
+    def __init__(self, cfg: dict, day, feed: Feed, log, prefix: str = ""):
         self.cfg, self.day, self.feed, self.log = cfg, day, feed, log
+        self.prefix = prefix                              # "sim-" keeps a simulation away from the live day's files
         self.window = max(cfg["orb_minutes"], cfg["rvol_minutes"])
         self.scan_at = datetime.combine(day, time(9, 15), clock.IST) + timedelta(minutes=self.window)
-        self.st = state.read_json("state/autopilot.json") or {}
+        self.st = state.read_json(f"state/{prefix}autopilot.json") or {}
         if self.st.get("date") != day.isoformat():
             self.st = {"date": day.isoformat(), "phase": "pre", "armed": {}, "done": {}, "seen": {}, "log": []}
 
     def save(self):
-        state.write_json("state/autopilot.json", self.st)
+        state.write_json(f"state/{self.prefix}autopilot.json", self.st)
 
     def note(self, text: str, now):
         line = f"{now:%H:%M} {text}"
@@ -230,7 +231,7 @@ class Day:
             h["cap"] = paper.cap_price(h["side"], h["trigger"], h["tick"], self.cfg)
             h["armed_at"] = armed_at.isoformat()
             self.st["armed"][h["symbol"]] = h
-        state.write_json("watchlist.json", {"as_of": now.isoformat(timespec="minutes"), "hits": tradable,
+        state.write_json(f"{self.prefix}watchlist.json", {"as_of": now.isoformat(timespec="minutes"), "hits": tradable,
                                             "in_play": len(in_play), "scanned": len(measured)})
         names = ", ".join(f"{h['symbol']} {h['side']} {h['rvol']}×" for h in tradable) or "none"
         self.note(f"scan: {len(measured)} scanned, {len(in_play)} in play, armed {len(tradable)}: {names}", now)
@@ -330,7 +331,7 @@ class Day:
         wins = sum(1 for t in today if t["net"] > 0)
         rep = {"date": self.day.isoformat(), "trades": len(today), "wins": wins, "net": net, "charges": charges,
                "not_traded": self.st["done"], "log": self.st["log"]}
-        state.write_json(f"reports/autopilot-{self.day.isoformat()}.json", rep)
+        state.write_json(f"reports/{self.prefix}autopilot-{self.day.isoformat()}.json", rep)
         self.note(f"report: {len(today)} paper trades, {wins} wins, net ₹{net:,.2f} after ₹{charges:,.2f} charges", now)
 
 
@@ -390,13 +391,13 @@ def _simulate(a) -> int:
     cfg = prepare_cfg(a.source or "saved")
     log = make_logger()
     day = datetime.strptime(a.date, "%Y-%m-%d").date()
-    st = state.path("state/autopilot.json")
+    st = state.path("state/sim-autopilot.json")
     if st.exists():
         st.unlink()
     led = od.ledger()
     led["trades"] = [t for t in led["trades"] if t["date"] != a.date]
     od.save_ledger(led)
-    d = Day(cfg, day, SavedFeed(), log)
+    d = Day(cfg, day, SavedFeed(), log, prefix="sim-")
     d.st["phase"] = "ready"
     d.st["liquid"] = d.liquid(d.universe()) if state.read_json("universe.json") else [p.stem for p in state.path("candles").glob("*.json")]
     t = datetime.combine(day, time(9, 15), clock.IST) + PUBLISH_LAG      # the live loop wakes at these times too
