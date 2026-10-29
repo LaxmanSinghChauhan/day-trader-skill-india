@@ -38,6 +38,8 @@ class Autopilot(unittest.TestCase):
             report = ws.read(f"reports/sim-autopilot-{DAY.isoformat()}.json")
             self.assertEqual(report["trades"], 3)
             self.assertIn("scan: 5 scanned", "\n".join(report["log"]))
+            self.assertEqual(report["kind"], "sim")
+            self.assertEqual([w["symbol"] for w in report["watchlist"]], ["UPTREND", "FAKEOUT", "REDDOWN"])
 
     def test_risk_limits_still_apply(self):
         with Workspace() as ws:
