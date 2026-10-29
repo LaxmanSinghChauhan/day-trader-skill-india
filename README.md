@@ -1,9 +1,10 @@
 # Day Trader skill — India edition
 
-12 Claude skills for **intraday trading on the Indian stock market**: NSE/BSE cash equity, MIS, on
+13 Claude skills for **intraday trading on the Indian stock market**: NSE/BSE cash equity, MIS, on
 Zerodha Kite Connect. A pre-market briefing, a Stocks-in-Play opening-range scanner, an entry timer, an exit
 planner, **Zerodha charges to the paisa**, a replay after charges, a position sizer, a risk manager, an
-order executor (paper by default, never without your yes), news, bulk/block deals and a journal.
+order executor (paper by default, never without your yes), news, bulk/block deals, a journal, and an
+**autopilot** that paper-trades the whole day by itself.
 
 Plain Python (3.9+, standard library only), MIT. Inspired by the idea of
 [Jakeschincariol/day-trader-skill](https://github.com/Jakeschincariol/day-trader-skill), a US pack. This one
@@ -30,7 +31,7 @@ cp -r day-trader-skill-india/nse-* day-trader-skill-india/nse_core ~/.claude/ski
 ```
 Then `mkdir intraday && cp config.example.json intraday/config.json` in your project, and edit the limits.
 
-## The twelve
+## The thirteen
 
 | Command | Job | What it does |
 | --- | --- | --- |
@@ -46,8 +47,12 @@ Then `mkdir intraday && cp config.example.json intraday/config.json` in your pro
 | `/nse-news` | News & events | NSE/BSE announcements tagged; results-day and event-window blocks for the risk manager |
 | `/nse-deals` | Deals & disclosures | Bulk/block deal files summarised; how to read PIT insider, SAST and pledge filings |
 | `/nse-journal` | Journal | Daily/weekly P&L after charges, expectancy, long vs short, a yearly CSV for ITR-3 |
+| `/nse-autopilot` | Paper autopilot | Runs the chain all day on its own: 08:30 history, scan, resting entries, the real risk check, stops, 15:10 exit, report. Paper only |
 
 ## A trading day
+Hands-off, on paper: `caffeinate -i python3 nse-autopilot/autopilot.py run` in a terminal tab before 09:20.
+
+By hand, with Claude:
 ```
 08:45  /nse-briefing      open? events? room left this week?
 09:00  /nse-news          results / board meetings today → avoid list

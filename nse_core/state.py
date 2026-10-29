@@ -36,6 +36,8 @@ DEFAULTS = {
     "entry_cap_pct": 0.0005,        # IOC limit at most 0.05 % beyond the trigger
     "doji_body_pct": 0.10,          # body under 10 % of the range = doji, no trade
     "min_price": 50,
+    "min_turnover_cr": 20,          # autopilot: average daily traded value over 20 days, ₹ crore
+    "autopilot_source": "yahoo",    # yahoo (free, unofficial) or kite (Connect app)
     "circuit_room_pct": 2.0,        # skip entries within 2 % of the circuit limit
     "max_orders_per_second": 5,     # SEBI's retail-algo threshold is 10 per second
     "event_windows": [],            # [{"from": "2026-12-04 09:55", "to": "2026-12-04 10:20", "why": "RBI policy"}]

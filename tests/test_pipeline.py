@@ -29,9 +29,10 @@ def run(mod, *argv) -> tuple[int, str]:
 
 def build_market(ws):
     history = trading_days(DAY, 16)[:-1]                                   # 15 sessions: ATR(14) needs 15
-    up = [504.5] + [round(505 + i * 0.5, 2) for i in range(30)]                 # trends to ~519.5
-    fake = [404.4, 402.0, 399.0, 397.0, 396.0]                                  # breaks out, then the stop
-    down = [445.8] + [round(445 - i * 0.2, 2) for i in range(25)]               # short, drifts lower
+    # the 09:20 bar stays inside the range; the break comes in the 09:25 bar, the first one a bot can trade
+    up = [503.5, 504.5] + [round(505 + i * 0.5, 2) for i in range(30)]          # trends to ~519.5
+    fake = [403.5, 404.4, 402.0, 399.0, 397.0, 396.0]                           # breaks out, then the stop
+    down = [446.2, 445.8] + [round(445 - i * 0.2, 2) for i in range(25)]        # short, drifts lower
     write_candles(ws, "UPTREND", flat_history(history, 500) + session(DAY, (500, 504, 499, 503), up, 5000))
     write_candles(ws, "FAKEOUT", flat_history(history, 400) + session(DAY, (400, 404, 399.5, 403), fake, 4000))
     write_candles(ws, "REDDOWN", flat_history(history, 450) + session(DAY, (450, 450.5, 446, 446.5), down, 3500))
