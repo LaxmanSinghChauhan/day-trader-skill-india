@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "day-trader-skill-india",
+  "description": "Intraday trading skills for the Indian stock market (NSE/BSE, Zerodha Kite Connect)",
+  "owner": {
+    "name": "Laxman Singh Chauhan",
+    "url": "https://github.com/LaxmanSinghChauhan"
+  },
+  "plugins": [
+    {
+      "name": "day-trader-skill-india",
+      "description": "Twelve skills for NSE intraday: briefing, Stocks-in-Play scanner, entry, exit, Zerodha charges, replay after charges, sizing, risk PASS/BLOCK, Kite orders (paper by default, never without your yes), news, bulk/block deals, journal.",
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/LaxmanSinghChauhan/day-trader-skill-india"
+    }
+  ]
+}

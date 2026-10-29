@@ -1,0 +1,24 @@
+{
+  "name": "day-trader-skill-india",
+  "description": "12 Claude skills for intraday trading on the Indian stock market (NSE/BSE, Zerodha Kite): pre-market briefing, Stocks-in-Play opening-range scanner, entry timer, exit planner, exact Zerodha charges, replay after charges, position sizer, risk manager, order executor (paper by default, never without your yes), news, bulk/block deals and a trade journal.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Laxman Singh Chauhan",
+    "url": "https://github.com/LaxmanSinghChauhan"
+  },
+  "homepage": "https://github.com/LaxmanSinghChauhan/day-trader-skill-india",
+  "repository": "https://github.com/LaxmanSinghChauhan/day-trader-skill-india",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "claude-skills",
+    "intraday-trading",
+    "nse",
+    "india",
+    "zerodha",
+    "kite-connect",
+    "opening-range-breakout",
+    "paper-trading"
+  ],
+  "skills": "./"
+}
