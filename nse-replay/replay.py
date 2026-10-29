@@ -17,69 +17,56 @@ import json
 import math
 import random
 import sys
-from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from nse_core import candles as cd  # noqa: E402
 from nse_core import charges as ch  # noqa: E402
-from nse_core import clock, sip, state  # noqa: E402
+from nse_core import clock, paper, sip, state  # noqa: E402
 from nse_core import plan as pl  # noqa: E402
-from nse_core.ticks import to_tick  # noqa: E402
-
-SLIPPAGE_TICKS = 1
-
 
 def simulate(hit: dict, bars: list, cfg: dict) -> dict | None:
     side, trig, tick = hit["side"], hit["trigger"], hit["tick"]
     long = side == "LONG"
-    window = max(cfg["orb_minutes"], cfg["rvol_minutes"])          # nothing is known before both windows close
-    or_end = (datetime.combine(date.today(), time(9, 15)) + timedelta(minutes=window)).time()
+    armed = paper.first_tradable_bar_start(bars[0].t.date(), cfg)   # nothing is known before the window closes
     until, hard = clock.hhmm(cfg["entries_until"]), clock.hhmm(cfg["hard_exit"])
-    cap = float(to_tick(trig * (1 + cfg["entry_cap_pct"]), tick, "down")) if long else float(to_tick(trig * (1 - cfg["entry_cap_pct"]), tick, "up"))
-    later = [b for b in bars if b.t.time() >= or_end]
+    cap = paper.cap_price(side, trig, tick, cfg)
+    later = [b for b in bars if b.t >= armed]
     for i, b in enumerate(later):
         if b.t.time() >= until:
             return None
-        if (long and b.h >= trig) or (not long and b.l <= trig):
-            base = (max(trig, b.o) if long else min(trig, b.o))
-            fill = base + SLIPPAGE_TICKS * tick if long else base - SLIPPAGE_TICKS * tick
-            if (long and fill > cap) or (not long and fill < cap):
-                if (long and base > cap) or (not long and base < cap):
-                    return {"skip": "gapped past the IOC cap"}
-                fill = cap
-            fill = round(fill, 2)
-            stop, _ = pl.base_stop(side, fill, hit["atr"], tick, cfg)
-            stop, qty, widened = pl.fit_stop_to_charges(side, fill, stop, tick, cfg, None, cfg["exchange"])
-            if qty <= 0:
-                return {"skip": "no quantity fits"}
-            exit_px, reason, exit_t = None, None, None
-            best = worst = fill
-            for j, x in enumerate(later[i:]):
-                if j > 0 and x.t.time() >= hard:
-                    exit_px, reason, exit_t = x.o, "time", x.t
-                    break
-                hit_stop = x.l <= stop if long else x.h >= stop
-                if hit_stop:
-                    gap_px = min(stop, x.o) if long else max(stop, x.o)
-                    px = (gap_px if j > 0 else stop)
-                    exit_px = px - SLIPPAGE_TICKS * tick if long else px + SLIPPAGE_TICKS * tick
-                    reason, exit_t = "stop", x.t
-                    worst = min(worst, x.l) if long else max(worst, x.h)
-                    break
-                best = max(best, x.h) if long else min(best, x.l)
+        fill = paper.entry_fill(side, trig, cap, b, tick)
+        if fill is None:
+            continue
+        if fill == "gap":
+            return {"skip": "gapped past the IOC cap"}
+        stop, _ = pl.base_stop(side, fill, hit["atr"], tick, cfg)
+        stop, qty, widened = pl.fit_stop_to_charges(side, fill, stop, tick, cfg, None, cfg["exchange"])
+        if qty <= 0:
+            return {"skip": "no quantity fits"}
+        exit_px, reason, exit_t = None, None, None
+        best = worst = fill
+        for j, x in enumerate(later[i:]):
+            if j > 0 and x.t.time() >= hard:
+                exit_px, reason, exit_t = x.o, "time", x.t
+                break
+            if paper.stop_hit(side, stop, x):
+                exit_px, reason, exit_t = paper.stop_fill(side, stop, x, tick, j == 0), "stop", x.t
                 worst = min(worst, x.l) if long else max(worst, x.h)
-            if exit_px is None:
-                exit_px, reason, exit_t = later[-1].c, "end of data", later[-1].t
-            exit_px = round(exit_px, 2)
-            rt = ch.round_trip(side, fill, exit_px, qty, cfg["exchange"])
-            risk = abs(fill - stop)
-            return {"symbol": hit["symbol"], "date": hit["date"], "side": side, "rvol": hit["rvol"],
-                    "entry_at": b.t.strftime("%H:%M"), "entry": fill, "stop": stop, "widened": widened, "qty": qty,
-                    "exit": exit_px, "exit_at": exit_t.strftime("%H:%M"), "reason": reason, "gross": rt.gross,
-                    "charges": rt.total, "net": rt.net, "r": round(rt.net / (risk * qty), 3),
-                    "mfe_r": round(abs(best - fill) / risk, 2), "mae_r": round(abs(fill - worst) / risk, 2)}
+                break
+            best = max(best, x.h) if long else min(best, x.l)
+            worst = min(worst, x.l) if long else max(worst, x.h)
+        if exit_px is None:
+            exit_px, reason, exit_t = later[-1].c, "end of data", later[-1].t
+        exit_px = round(exit_px, 2)
+        rt = ch.round_trip(side, fill, exit_px, qty, cfg["exchange"])
+        risk = abs(fill - stop)
+        return {"symbol": hit["symbol"], "date": hit["date"], "side": side, "rvol": hit["rvol"],
+                "entry_at": b.t.strftime("%H:%M"), "entry": fill, "stop": stop, "widened": widened, "qty": qty,
+                "exit": exit_px, "exit_at": exit_t.strftime("%H:%M"), "reason": reason, "gross": rt.gross,
+                "charges": rt.total, "net": rt.net, "r": round(rt.net / (risk * qty), 3),
+                "mfe_r": round(abs(best - fill) / risk, 2), "mae_r": round(abs(fill - worst) / risk, 2)}
     return None
 
 

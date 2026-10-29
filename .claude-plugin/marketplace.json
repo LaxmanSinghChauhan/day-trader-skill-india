@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "day-trader-skill-india",
-      "description": "Twelve skills for NSE intraday: briefing, Stocks-in-Play scanner, entry, exit, Zerodha charges, replay after charges, sizing, risk PASS/BLOCK, Kite orders (paper by default, never without your yes), news, bulk/block deals, journal.",
+      "description": "Thirteen skills for NSE intraday: briefing, Stocks-in-Play scanner, entry, exit, Zerodha charges, replay after charges, sizing, risk PASS/BLOCK, Kite orders (paper by default, never without your yes), news, bulk/block deals, journal, paper autopilot.",
       "source": "./",
       "category": "productivity",
       "homepage": "https://github.com/LaxmanSinghChauhan/day-trader-skill-india"

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import date, timedelta
 
 from . import charges as ch
@@ -22,12 +23,17 @@ def confirm_code(order: dict) -> str:
     return fingerprint(order)[:6].upper()
 
 
+def ledger_name() -> str:
+    """state/ledger.json; nse-autopilot's simulate mode points NSE_LEDGER at a separate file."""
+    return os.environ.get("NSE_LEDGER", "state/ledger.json")
+
+
 def ledger() -> dict:
-    return state.read_json("state/ledger.json", {"trades": [], "orders": []})
+    return state.read_json(ledger_name(), {"trades": [], "orders": []})
 
 
 def save_ledger(data: dict) -> None:
-    state.write_json("state/ledger.json", data)
+    state.write_json(ledger_name(), data)
 
 
 def open_trades(led: dict) -> list[dict]:

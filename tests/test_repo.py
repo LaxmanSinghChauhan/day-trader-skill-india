@@ -10,8 +10,8 @@ SKILLS = sorted(p.parent for p in ROOT.glob("*/SKILL.md"))
 
 
 class Repo(unittest.TestCase):
-    def test_twelve_skills_with_matching_names(self):
-        self.assertEqual(len(SKILLS), 12)
+    def test_thirteen_skills_with_matching_names(self):
+        self.assertEqual(len(SKILLS), 13)
         for d in SKILLS:
             text = (d / "SKILL.md").read_text()
             self.assertTrue(text.startswith("---\n"), d)
