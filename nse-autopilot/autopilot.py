@@ -65,50 +65,75 @@ class Feed:
             self._k = k
         return self._k
 
-    def _rows(self, sym: str, start, end, history: bool):
+    def _rows(self, sym: str, start, end, rng: str):
         if self.source == "yahoo":
             from nse_core import yahoo
-            return yahoo.chart(sym, "5m", "60d" if history else "1d"), None
+            return yahoo.chart(sym, "5m", rng), None
         k = self._kite()
         if sym not in self._tokens:
             raise RuntimeError("not in Kite's NSE EQ instruments")
         token, tick = self._tokens[sym]
         return k.historical(token, "5minute", start.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S")), tick
 
+    def _merge(self, sym: str, rows, tick, max_days: int = 60) -> None:
+        """New rows replace old ones with the same start time (a bar still forming gets its final values later)."""
+        f = state.path(f"candles/{sym}.json")
+        try:
+            old = json.loads(f.read_text()) if f.exists() else {"candles": [], "tick_size": tick}
+        except ValueError:
+            old = {"candles": [], "tick_size": tick}
+        by_t = {r[0]: r for r in old["candles"]}
+        by_t.update({r[0]: r for r in rows})
+        merged = sorted(by_t.values(), key=lambda r: r[0])
+        days = sorted({r[0][:10] for r in merged})[-max_days:]
+        if days:
+            merged = [r for r in merged if r[0][:10] >= days[0]]
+        cd.save(f, sym, "5minute", self.source, merged, old.get("tick_size") or tick)
+
+    def _fetch_all(self, jobs, now, log, label: str) -> None:
+        """jobs: [(symbol, start, yahoo_range)]; 4 at a time, politely."""
+        from concurrent.futures import ThreadPoolExecutor
+
+        def one(job):
+            sym, start, rng = job
+            try:
+                rows, tick = self._rows(sym, start, now, rng)
+                self._merge(sym, rows, tick)
+                return None
+            except Exception as e:
+                return f"{sym} ({e})"
+            finally:
+                systime.sleep(0.2)
+
+        if self.source == "kite":
+            self._kite()                      # load instruments once, before the threads start
+        with ThreadPoolExecutor(max_workers=1 if self.source == "kite" else 4) as pool:
+            failed = [r for r in pool.map(one, jobs) if r]
+        if failed or label != "refresh":          # the 5-minute refresh only speaks up when something failed
+            log(f"{label}: {len(jobs) - len(failed)} of {len(jobs)} fetched" + (f"; failed {len(failed)}: {', '.join(failed[:4])}" if failed else ""))
+
     def history(self, symbols, now, log) -> None:
         need = clock.previous_trading_day(now.date())
-        fetched = failed = 0
+        jobs = []
         for s in symbols:
             f = state.path(f"candles/{s}.json")
-            if f.exists():
-                bars = cd.load(f)["bars"]
-                if bars and bars[-1].t.date() >= need:
-                    continue
             try:
-                rows, tick = self._rows(s, now - timedelta(days=40), now, True)
-                cd.save(f, s, "5minute", self.source, [r for r in rows if r[0][:10] < now.date().isoformat()], tick)
-                fetched += 1
-            except Exception:
-                failed += 1
-            systime.sleep(0.3)
-        log(f"history: fetched {fetched}, failed {failed}, {len(symbols)} symbols")
+                bars = cd.load(f)["bars"] if f.exists() else []
+            except (ValueError, KeyError):
+                bars = []                     # unreadable file: load it again
+            if bars and bars[-1].t.date() >= need:
+                continue
+            fresh = len({b.t.date() for b in bars}) >= 20
+            start = (bars[-1].t if fresh else now - timedelta(days=40))
+            jobs.append((s, start, "5d" if fresh else "60d"))       # top up a good file, else load ~60 days
+        if jobs:
+            self._fetch_all(jobs, now, log, "history")
+        else:
+            log("history: all files current")
 
     def today(self, symbols, now, log) -> None:
         start = datetime.combine(now.date(), time(9, 15), clock.IST)
-        failed = []
-        for s in symbols:
-            f = state.path(f"candles/{s}.json")
-            try:
-                rows, tick = self._rows(s, start, now, False)
-                today_rows = [r for r in rows if r[0][:10] == now.date().isoformat()]
-                old = json.loads(f.read_text()) if f.exists() else {"candles": [], "tick_size": tick}
-                keep = [r for r in old["candles"] if r[0][:10] != now.date().isoformat()]
-                cd.save(f, s, "5minute", self.source, keep + today_rows, old.get("tick_size") or tick)
-            except Exception as e:
-                failed.append(f"{s} ({e})")
-            systime.sleep(0.15)
-        if failed:
-            log(f"refresh failed for {len(failed)}: {', '.join(failed[:5])}")
+        self._fetch_all([(s, start, "1d") for s in symbols], now, log, "refresh")
 
 
 class SavedFeed(Feed):
