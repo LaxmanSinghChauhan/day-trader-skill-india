@@ -233,6 +233,9 @@ class Day:
             self.st["armed"][h["symbol"]] = h
         state.write_json(f"{self.prefix}watchlist.json", {"as_of": now.isoformat(timespec="minutes"), "hits": tradable,
                                             "in_play": len(in_play), "scanned": len(measured)})
+        self.st["watchlist"] = [{k: h.get(k) for k in ("symbol", "side", "rvol", "range_low", "range_high", "trigger", "cap", "tick")}
+                                for h in tradable]
+        self.st["scan"] = {"at": now.isoformat(timespec="minutes"), "scanned": len(measured), "in_play": len(in_play)}
         names = ", ".join(f"{h['symbol']} {h['side']} {h['rvol']}×" for h in tradable) or "none"
         self.note(f"scan: {len(measured)} scanned, {len(in_play)} in play, armed {len(tradable)}: {names}", now)
         self.st["phase"] = "trading"
@@ -329,8 +332,9 @@ class Day:
         net = round(sum(t["net"] for t in today), 2)
         charges = round(sum(t["charges"] for t in today), 2)
         wins = sum(1 for t in today if t["net"] > 0)
-        rep = {"date": self.day.isoformat(), "trades": len(today), "wins": wins, "net": net, "charges": charges,
-               "not_traded": self.st["done"], "log": self.st["log"]}
+        rep = {"date": self.day.isoformat(), "kind": "sim" if self.prefix else "paper", "source": self.feed.source,
+               "trades": len(today), "wins": wins, "net": net, "charges": charges, "scan": self.st.get("scan"),
+               "watchlist": self.st.get("watchlist", []), "not_traded": self.st["done"], "log": self.st["log"]}
         state.write_json(f"reports/{self.prefix}autopilot-{self.day.isoformat()}.json", rep)
         self.note(f"report: {len(today)} paper trades, {wins} wins, net ₹{net:,.2f} after ₹{charges:,.2f} charges", now)
 
