@@ -33,7 +33,9 @@ class Autopilot(unittest.TestCase):
             self.assertEqual(len(got), 3)
             self.assertTrue(all(t["paper"] and t["auto"] for t in led["trades"]))
             self.assertFalse((ws.path / "state/ledger.json").exists())                 # the real paper ledger is untouched
-            report = ws.read(f"reports/autopilot-{DAY.isoformat()}.json")
+            self.assertFalse((ws.path / "state/autopilot.json").exists())              # and so is the live day's state
+            self.assertFalse((ws.path / "watchlist.json").exists())
+            report = ws.read(f"reports/sim-autopilot-{DAY.isoformat()}.json")
             self.assertEqual(report["trades"], 3)
             self.assertIn("scan: 5 scanned", "\n".join(report["log"]))
 
@@ -44,7 +46,7 @@ class Autopilot(unittest.TestCase):
             run(autopilot, "simulate", "--date", DAY.isoformat())
             led = ws.read("state/sim-ledger.json")
             self.assertEqual(len(led["trades"]), 1)          # all three trigger in the 09:25 bar; one may be open
-            report = ws.read(f"reports/autopilot-{DAY.isoformat()}.json")
+            report = ws.read(f"reports/sim-autopilot-{DAY.isoformat()}.json")
             blocked = [why for why in report["not_traded"].values() if "risk BLOCK" in why]
             self.assertEqual(len(blocked), 2)
             self.assertIn("positions", blocked[0])
