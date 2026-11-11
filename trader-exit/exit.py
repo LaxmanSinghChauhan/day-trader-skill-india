@@ -243,6 +243,12 @@ def round_tick(x, tick):
     return ((Decimal(str(x)) / tick).to_integral_value(rounding=ROUND_HALF_UP) * tick).quantize(CENT)
 
 
+def tk(tick):
+    """A tick for people: 0.05, 0.10, 0.50, 1, 5."""
+    t = D(tick)
+    return format(t.quantize(CENT), "f") if t < 1 else num(t)
+
+
 def _group(digits):
     """Indian digit grouping: '1234567' -> '12,34,567' (thousands, then lakhs and crores in twos)."""
     if len(digits) <= 3:
@@ -359,8 +365,8 @@ def compute(entry, stop_rule, stop_param, target_rule, target_param, or_high=Non
         raise PlanError("unknown stop rule %r" % stop_rule)
     stop = floor_tick(raw, tick)
     if stop != D(raw):
-        detail = (detail + ", rounded down to the %s tick" % num(tick) if detail
-                  else "\u20b9%s rounded down to the %s tick" % (num(raw), num(tick)))
+        detail = (detail + ", rounded down to the %s tick" % tk(tick) if detail
+                  else "\u20b9%s rounded down to the %s tick" % (num(raw), tk(tick)))
     if stop >= e:
         raise PlanError("the stop %s (%s) is at or above the entry %s: a long's stop goes under the entry"
                         % (money(stop), label, money(e)))
@@ -715,7 +721,7 @@ def describe(plan):
     out.append("  Risk a share  %s (%s%% of the entry)" % (money(plan["risk_per_share"]), pct))
     out.append("  Reward:risk   %s" % ratio(plan["reward_risk"]))
     if plan.get("tick") is not None:
-        out.append("  Tick          \u20b9%s (stop and target sit on NSE's price grid)" % num(D(plan["tick"])))
+        out.append("  Tick          \u20b9%s (stop and target sit on NSE's price grid)" % tk(plan["tick"]))
     out.append("  Flat by       %s IST, win or lose: no overnight hold (intraday, MIS)" % plan["flat_by"])
     out.append("Set before the entry. If price hits the stop, you are out; never move it further away.")
     out.append(NOTE)
