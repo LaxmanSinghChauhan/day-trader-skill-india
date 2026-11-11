@@ -472,8 +472,8 @@ def render(symbol, result, filings, today=None):
     def big(v):
         return ("%s%s %s" % (sign, crore(v, cur), word)) if v is not None else "-"
 
-    out = ["%s (%s). %s%s except EPS. Source: Yahoo Finance fundamentals (unofficial copy of the "
-           "filed results)." % (result["entity"], symbol, sign, word), ""]
+    out = ["%s (%s). %s %s except EPS. Source: Yahoo Finance fundamentals (unofficial copy of the "
+           "filed results)." % (result["entity"], symbol, sign.strip(), word), ""]
     if (cur or "INR").upper() != "INR":
         out.insert(1, "Yahoo carries this company's figures in %s, not rupees (it also files abroad)." % cur.upper())
     out.append("%-11s %-8s %11s %8s %7s %7s %7s %10s %8s %7s" % (

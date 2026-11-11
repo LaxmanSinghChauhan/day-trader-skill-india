@@ -1,0 +1,5 @@
+# Investors to follow in NSE bulk and block deals: one name, or part of a name, a line.
+# The exchange prints the client name as the broker typed it, so short forms match more.
+# Put the names you follow here. Two examples of how a line can look:
+motilal oswal mutual fund
+kotak mahindra mutual fund
