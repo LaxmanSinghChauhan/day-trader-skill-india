@@ -66,6 +66,14 @@ class TheRule(unittest.TestCase):
                       "₹1340.90 (+0.14%).", lines)
         self.assertIn("IST", lines[0])
 
+    def test_what_really_happened_after_the_entry(self):
+        # the README says it: with a stop at 1,335.70 and a target at 1,349.90, the stop came first, at 11:10
+        after = [b for b in chart()["bars"] if entry.to_ist(entry.utc_of(b["t"])).strftime("%H:%M") > "09:30"]
+        first = next(b for b in after if b["l"] <= 1335.70 or b["h"] >= 1349.90)
+        self.assertEqual(entry.to_ist(entry.utc_of(first["t"])).strftime("%H:%M"), "11:10")
+        self.assertLessEqual(first["l"], 1335.70)
+        self.assertLess(first["h"], 1349.90)
+
     def test_a_late_look_says_so(self):
         res = entry.evaluate(chart(), at("10:00"))
         self.assertEqual(res["minutes_since"], 25)
