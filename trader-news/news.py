@@ -479,7 +479,8 @@ def collect(fetcher, watch, state, filings=True, hours=48, errors=None):
         try:
             items += parse_rss(fetcher.get(search_url(t, watch[t], hours), "gnews-%s.xml" % t), t)
         except NewsError as exc:
-            errors.append("headlines for %s: %s" % (t, exc))
+            if not (fetcher.offline and "no file" in str(exc)):
+                errors.append("headlines for %s: %s" % (t, exc))
     if filings:
         by_name = {name_key(n): s for s, n in watch.items() if n}
         nameless = sorted(s for s, n in watch.items() if not n)
