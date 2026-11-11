@@ -832,9 +832,9 @@ def _group(digits):
 
 
 def money(x):
-    """1234567.5 -> '₹12,34,567.50'."""
+    """1234567.5 -> rupees with Indian grouping: 12,34,567.50 after the rupee sign."""
     whole, frac = ("%.2f" % abs(x)).split(".")
-    return ("-" if x < 0 else "") + "\u20b9" + _group(whole) + "." + frac
+    return ("-" if x < 0 else "") + "₹" + _group(whole) + "." + frac
 
 
 # ---------------------------------------------------------------- commands
